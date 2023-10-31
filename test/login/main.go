@@ -15,6 +15,7 @@ func main() {
 	var err error
 	fmt.Println("请输入 code")
 	req.Code, err = input.ReadString('\n')
+	req.Code = req.Code[:len(req.Code)-1]
 	accessToken, err := req.VerifyCode()
 	if err != nil {
 		logrus.Error(err)

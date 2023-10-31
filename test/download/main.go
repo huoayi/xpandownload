@@ -23,13 +23,18 @@ func main() {
 	var err error
 	fmt.Println("请输入 access_token")
 	req.AccessToken, err = input.ReadString('\n')
+	req.AccessToken = req.AccessToken[:len(req.AccessToken)-1]
 	fmt.Println("请输入 path 路径")
 	req.Path, err = input.ReadString('\n')
+	req.Path = req.Path[:len(req.Path)]
 	fmt.Println("请输入 fs_id")
 	str, err := input.ReadString('\n')
+	str = str[:len(str)-1]
 	req.FsID, err = strconv.ParseUint(str, 10, 64)
+
 	fmt.Println("请输入 is_dir")
 	str, err = input.ReadString('\n')
+	str = str[:len(str)-1]
 	req.IsDir, err = strconv.ParseBool(str)
 	err = req.Download()
 	if err != nil {
