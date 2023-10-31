@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+		"net/url"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -62,7 +63,7 @@ func init() {
 func (req DownloadInfoReq) Download() error {
 	switch req.IsDir {
 	case true:
-		response, _, err := apiClient.MultimediafileApi.Xpanfilelistall(context.Background()).Recursion(1).Path(req.Path).Execute()
+		response, _, err := apiClient.MultimediafileApi.Xpanfilelistall(context.Background()).Recursion(1).Path(url.PathEscape(req.Path)).Execute()
 		if err != nil {
 			logrus.Error(err)
 			return err

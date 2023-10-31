@@ -13,6 +13,7 @@ func main() {
 	req := LoginCode{}
 	input := bufio.NewReader(os.Stdin)
 	var err error
+	fmt.Println("授权码模式url http://openapi.baidu.com/oauth/2.0/authorize?response_type=code&client_id=zNBhtXeLhZDRoxMI6trDohpVREC5AEFP&redirect_uri=oob&scope=basic,netdisk&device_id=39856593")
 	fmt.Println("请输入 code")
 	req.Code, err = input.ReadString('\n')
 	req.Code = req.Code[:len(req.Code)-1]
