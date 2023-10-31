@@ -31,7 +31,7 @@ func main() {
 	// 基于简化模式的获取access_token方式
 
 	fmt.Println("可通过访问该url获取路径参数中的access_token")
-	fmt.Println("http://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id=62ezec4ZtP1UbL0ZReOOsv4cWGS6FKLy&redirect_uri=oob&scope=basic,netdisk")
+	fmt.Println("http://openapi.baidu.com/oauth/2.0/authorize?response_type=token&client_id=zNBhtXeLhZDRoxMI6trDohpVREC5AEFP&redirect_uri=oob&scope=basic,netdisk")
 	fmt.Println("请输入您获取到的access_token:")
 	// TODO: 填充最新的 access_token
 	input := bufio.NewReader(os.Stdin)
@@ -124,7 +124,6 @@ func GetFileInfo(dir string, fileDLink map[string]string, fileSize map[string]ui
 	if err != nil {
 		logrus.Error(err)
 	}
-
 	var readFileListRespBody struct {
 		Errno int `json:"errno"`
 		List  []struct {
@@ -152,7 +151,7 @@ func GetFileInfo(dir string, fileDLink map[string]string, fileSize map[string]ui
 	for key := range fileDLink {
 		delete(fileDLink, key)
 	}
-
+	logrus.Infof("%+v", metas)
 	for _, meta := range metas.List {
 		fmt.Println(meta.Filename)
 		fileDLink[meta.Filename] = meta.Dlink

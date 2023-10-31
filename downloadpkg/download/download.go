@@ -2,6 +2,7 @@ package download
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
@@ -9,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"sync"
 	"syscall"
@@ -25,31 +27,39 @@ var queueChannel chan struct{}
 func Download(accessToken string, dlink string, outputFilename string, size uint64) error {
 	uri := dlink + "&" + "access_token=" + accessToken
 	begin := time.Now()
-	queueChannel = make(chan struct{}, 500)
+	queueChannel = make(chan struct{}, runtime.NumCPU())
 	// 创建一个通道用于接收信号
 	var SigCh chan os.Signal
 	SigCh = make(chan os.Signal, 1)
-
+	ctx, cancelFunc := context.WithCancel(context.Background())
 	// 捕获 SIGINT（Ctrl+C） 和 SIGTERM（kill 命令）
 	signal.Notify(SigCh, syscall.SIGINT)
 	go func() {
 		select {
 		case <-SigCh:
 			logrus.Info("下载终止")
+			cancelFunc()
 			return
 		}
 	}()
-	if size > 100*MB {
+	switch {
+	case size > 100*MB:
+
 		sum := size / (100 * MB)
 		var wg sync.WaitGroup
 		logrus.Info("共临时文件", sum)
 		for i := 0; uint64(i) <= sum; i++ {
 
-			wg.Add(1)
-			if uint64(i) == sum {
-				go doRequest(uri, uint64(i), 0, outputFilename, true, &wg)
-			} else {
-				go doRequest(uri, uint64(i), 0, outputFilename, false, &wg)
+			select {
+			case <-ctx.Done():
+				return errors.New("下载终止")
+			default:
+				wg.Add(1)
+				if uint64(i) == sum {
+					go doRequest(uri, uint64(i), 0, outputFilename, true, &wg)
+				} else {
+					go doRequest(uri, uint64(i), 0, outputFilename, false, &wg)
+				}
 			}
 		}
 		wg.Wait()
@@ -80,7 +90,7 @@ func Download(accessToken string, dlink string, outputFilename string, size uint
 				return err
 			}
 		}
-	} else {
+	default:
 		headers := map[string]string{
 			"User-Agent": "pan.baidu.com",
 		}
@@ -110,6 +120,7 @@ func Download(accessToken string, dlink string, outputFilename string, size uint
 
 		return nil
 	}
+
 	logrus.Info("下载共计使用时间:", time.Since(begin))
 	return nil
 }
