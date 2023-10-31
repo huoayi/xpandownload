@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/sirupsen/logrus"
+	"os"
+	"strconv"
 	"test-flag/downloadpkg/download"
 	openapi "test-flag/openxpanapi"
 )
@@ -15,7 +19,19 @@ func main() {
 		FsID:        0,
 		AccessToken: "",
 	}
-	err := req.Download()
+	input := bufio.NewReader(os.Stdin)
+	var err error
+	fmt.Println("请输入 access_token")
+	req.AccessToken, err = input.ReadString('\n')
+	fmt.Println("请输入 path 路径")
+	req.Path, err = input.ReadString('\n')
+	fmt.Println("请输入 fs_id")
+	str, err := input.ReadString('\n')
+	req.FsID, err = strconv.ParseUint(str, 10, 64)
+	fmt.Println("请输入 is_dir")
+	str, err = input.ReadString('\n')
+	req.IsDir, err = strconv.ParseBool(str)
+	err = req.Download()
 	if err != nil {
 		return
 	}

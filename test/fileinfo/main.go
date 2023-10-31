@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"net/url"
+	"os"
 	openapi "test-flag/openxpanapi"
 )
 
@@ -34,6 +37,12 @@ func main() {
 		Path:        "",
 		AccessToken: "",
 	}
+	input := bufio.NewReader(os.Stdin)
+	var err error
+	fmt.Println("请输入 access_token")
+	req.AccessToken, err = input.ReadString('\n')
+	fmt.Println("请输入 path 路径")
+	req.Path, err = input.ReadString('\n')
 	info, err := req.ShowDirInfo()
 	if err != nil {
 		logrus.Error(err)
