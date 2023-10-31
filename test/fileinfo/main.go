@@ -39,10 +39,10 @@ func main() {
 	input := bufio.NewReader(os.Stdin)
 	var err error
 	fmt.Println("请输入 access_token")
-	req.AccessToken, err = input.ReadString('\n')
+	req.AccessToken, err = input.ReadString('\r')
 	req.AccessToken = req.AccessToken[:len(req.AccessToken)-1]
 	fmt.Println("请输入 path 路径")
-	req.Path, err = input.ReadString('\n')
+	req.Path, err = input.ReadString('\r')
 	req.Path = req.Path[:len(req.Path)-1]
 	logrus.Infof("%+v", req)
 	info, err := req.ShowDirInfo()

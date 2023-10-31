@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-		"net/url"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -36,9 +35,12 @@ func main() {
 	fmt.Println("请输入 is_dir")
 	str, err = input.ReadString('\n')
 	str = str[:len(str)-1]
+	fmt.Println(str)
 	req.IsDir, err = strconv.ParseBool(str)
+	logrus.Infof("%+v", req)
 	err = req.Download()
 	if err != nil {
+		logrus.Error(err)
 		return
 	}
 }
@@ -63,7 +65,7 @@ func init() {
 func (req DownloadInfoReq) Download() error {
 	switch req.IsDir {
 	case true:
-		response, _, err := apiClient.MultimediafileApi.Xpanfilelistall(context.Background()).Recursion(1).Path(url.PathEscape(req.Path)).Execute()
+		response, _, err := apiClient.MultimediafileApi.Xpanfilelistall(context.Background()).Recursion(1).Path(req.Path).Execute()
 		if err != nil {
 			logrus.Error(err)
 			return err
@@ -90,6 +92,7 @@ func (req DownloadInfoReq) Download() error {
 			logrus.Error(err)
 			return err
 		}
+		logrus.Info("開始下載")
 		for _, meta := range metas.List {
 			err := download.Download(req.AccessToken, meta.Dlink, meta.Filename, meta.Size)
 			if err != nil {
