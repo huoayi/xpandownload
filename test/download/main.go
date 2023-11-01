@@ -1,13 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
-	"fmt"
+	"flag"
 	"github.com/sirupsen/logrus"
 	"os"
-	"strconv"
 	"test-flag/downloadpkg/download"
 	openapi "test-flag/openxpanapi"
 )
@@ -19,24 +17,13 @@ func main() {
 		FsID:        0,
 		AccessToken: "",
 	}
-	input := bufio.NewReader(os.Stdin)
 	var err error
-	fmt.Println("请输入 access_token")
-	req.AccessToken, err = input.ReadString('\n')
-	req.AccessToken = req.AccessToken[:len(req.AccessToken)-1]
-	fmt.Println("请输入 path 路径")
-	req.Path, err = input.ReadString('\n')
-	req.Path = req.Path[:len(req.Path)]
-	fmt.Println("请输入 fs_id")
-	str, err := input.ReadString('\n')
-	str = str[:len(str)-1]
-	req.FsID, err = strconv.ParseUint(str, 10, 64)
+	flag.StringVar(&req.AccessToken, "access_token", "", "登录凭证")
+	flag.StringVar(&req.Path, "path", "", "路径")
+	flag.Uint64Var(&req.FsID, "fs_id", 0, "fs_id")
 
-	fmt.Println("请输入 is_dir")
-	str, err = input.ReadString('\n')
-	str = str[:len(str)-1]
-	fmt.Println(str)
-	req.IsDir, err = strconv.ParseBool(str)
+	flag.BoolVar(&req.IsDir, "is_dir", false, "是否是文件夹")
+	flag.Parse()
 	logrus.Infof("%+v", req)
 	err = req.Download()
 	if err != nil {
@@ -65,7 +52,7 @@ func init() {
 func (req DownloadInfoReq) Download() error {
 	switch req.IsDir {
 	case true:
-		response, _, err := apiClient.MultimediafileApi.Xpanfilelistall(context.Background()).Recursion(1).Path(req.Path).Execute()
+		response, _, err := apiClient.MultimediafileApi.Xpanfilelistall(context.Background()).AccessToken(req.AccessToken).Recursion(1).Path(req.Path).Execute()
 		if err != nil {
 			logrus.Error(err)
 			return err
@@ -92,12 +79,27 @@ func (req DownloadInfoReq) Download() error {
 			logrus.Error(err)
 			return err
 		}
+		logrus.Info("file num: ", len(metas.List))
+		for _, meta := range metas.List {
+			logrus.Info("dlink:", meta.Dlink, " filename:", meta.Filename, " size:", meta.Size)
+		}
 		logrus.Info("開始下載")
 		for _, meta := range metas.List {
-			err := download.Download(req.AccessToken, meta.Dlink, meta.Filename, meta.Size)
-			if err != nil {
-				logrus.Error(err)
-				return err
+			if meta.Isdir == 0 {
+				logrus.Info(meta.Path)
+				logrus.Info(meta.Filename)
+				logrus.Info(meta.Path[:len(meta.Path)-len(meta.Filename)])
+				path := "." + meta.Path[len(req.Path):len(meta.Path)-len(meta.Filename)]
+				logrus.Info(path)
+				err := os.MkdirAll(path, 0777)
+				if err != nil {
+					return err
+				}
+				err = download.Download(path, req.AccessToken, meta.Dlink, meta.Filename, meta.Size)
+				if err != nil {
+					logrus.Error(err)
+					return err
+				}
 			}
 		}
 	case false:
@@ -109,7 +111,10 @@ func (req DownloadInfoReq) Download() error {
 			return err
 		}
 		for _, meta := range metas.List {
-			err := download.Download(req.AccessToken, meta.Dlink, meta.Filename, meta.Size)
+			logrus.Info(meta.Size)
+			logrus.Info(meta.Path)
+			err := download.Download("", req.AccessToken, meta.Dlink, meta.Filename, meta.Size)
+
 			if err != nil {
 				logrus.Error(err)
 				return err

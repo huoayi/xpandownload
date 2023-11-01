@@ -1,22 +1,20 @@
 package main
 
 import (
-	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"os"
 	openapi "test-flag/openxpanapi"
 )
 
 func main() {
 	req := LoginCode{}
-	input := bufio.NewReader(os.Stdin)
+
 	var err error
-	fmt.Println("授权码模式url http://openapi.baidu.com/oauth/2.0/authorize?response_type=code&client_id=zNBhtXeLhZDRoxMI6trDohpVREC5AEFP&redirect_uri=oob&scope=basic,netdisk&device_id=39856593")
-	fmt.Println("请输入 code")
-	req.Code, err = input.ReadString('\n')
-	req.Code = req.Code[:len(req.Code)-1]
+	// fmt.Println("授权码模式url http://openapi.baidu.com/oauth/2.0/authorize?response_type=code&client_id=zNBhtXeLhZDRoxMI6trDohpVREC5AEFP&redirect_uri=oob&scope=basic,netdisk&device_id=39856593")
+	flag.StringVar(&req.Code, "code", "", "授权码")
+	flag.Parse()
 	logrus.Infof("%+v", req.Code)
 	accessToken, err := req.VerifyCode()
 	if err != nil {

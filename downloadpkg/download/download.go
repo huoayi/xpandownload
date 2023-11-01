@@ -2,18 +2,15 @@ package download
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"os"
-	"os/signal"
 	"runtime"
 	"strconv"
 	"sync"
-	"syscall"
 	"test-flag/downloadpkg/utils"
 	"time"
 	// "icode.baidu.com/baidu/xpan/go-sdk/xpan/utils"
@@ -24,24 +21,10 @@ const MB = 1024 * KB
 
 var queueChannel chan struct{}
 
-func Download(accessToken string, dlink string, outputFilename string, size uint64) error {
+func Download(path string, accessToken string, dlink string, outputFilename string, size uint64) error {
 	uri := dlink + "&" + "access_token=" + accessToken
 	begin := time.Now()
 	queueChannel = make(chan struct{}, runtime.NumCPU())
-	// 创建一个通道用于接收信号
-	var SigCh chan os.Signal
-	SigCh = make(chan os.Signal, 1)
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	// 捕获 SIGINT（Ctrl+C） 和 SIGTERM（kill 命令）
-	signal.Notify(SigCh, syscall.SIGINT)
-	go func() {
-		select {
-		case <-SigCh:
-			logrus.Info("下载终止")
-			cancelFunc()
-			return
-		}
-	}()
 	switch {
 	case size > 100*MB:
 
@@ -51,26 +34,25 @@ func Download(accessToken string, dlink string, outputFilename string, size uint
 		for i := 0; uint64(i) <= sum; i++ {
 
 			select {
-			case <-ctx.Done():
-				return errors.New("下载终止")
+
 			default:
 				wg.Add(1)
 				if uint64(i) == sum {
-					go doRequest(uri, uint64(i), 0, outputFilename, true, &wg)
+					go doRequest(uri, uint64(i), 0, path+outputFilename, true, &wg)
 				} else {
-					go doRequest(uri, uint64(i), 0, outputFilename, false, &wg)
+					go doRequest(uri, uint64(i), 0, path+outputFilename, false, &wg)
 				}
 			}
 		}
 		wg.Wait()
 		logrus.Info("等待结束")
-		file, err := os.OpenFile(outputFilename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+		file, err := os.OpenFile(path+outputFilename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Printf("无法写入文件 %s: %v\n", outputFilename, err)
 			return err
 		}
 		for i := 0; uint64(i) <= sum; i++ {
-			filename := outputFilename + strconv.FormatUint(uint64(i), 10)
+			filename := path + outputFilename + strconv.FormatUint(uint64(i), 10)
 			content, err := ioutil.ReadFile(filename)
 			if err != nil {
 				fmt.Printf("无法读取文件 %s: %v\n", filename, err)
@@ -105,7 +87,7 @@ func Download(accessToken string, dlink string, outputFilename string, size uint
 		}
 
 		// 下载数据输出到名“outputFilename”的文件
-		file, err := os.OpenFile(outputFilename, os.O_WRONLY|os.O_CREATE, 0666)
+		file, err := os.OpenFile(path+outputFilename, os.O_WRONLY|os.O_CREATE, 0666)
 		defer file.Close()
 		write := bufio.NewWriter(file)
 		_, err = write.WriteString(body)

@@ -1,12 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"fmt"
+	"flag"
 	"github.com/sirupsen/logrus"
-	"os"
 	openapi "test-flag/openxpanapi"
+	"unicode/utf8"
 )
 
 type ShowDirInfoReq struct {
@@ -36,19 +35,31 @@ func main() {
 		Path:        "",
 		AccessToken: "",
 	}
-	input := bufio.NewReader(os.Stdin)
 	var err error
-	fmt.Println("请输入 access_token")
-	req.AccessToken, err = input.ReadString('\r')
-	req.AccessToken = req.AccessToken[:len(req.AccessToken)-1]
-	fmt.Println("请输入 path 路径")
-	req.Path, err = input.ReadString('\r')
-	req.Path = req.Path[:len(req.Path)-1]
+	flag.StringVar(&req.AccessToken, "access_token", "", "设置access_token")
+	flag.StringVar(&req.Path, "path", "", "设置文件路径")
+	flag.Parse()
 	logrus.Infof("%+v", req)
 	info, err := req.ShowDirInfo()
 	if err != nil {
 		logrus.Error(err)
 		return
 	}
-	logrus.Info(*info)
+
+	logrus.Info(decodeUnicode(*info))
+}
+
+func decodeUnicode(s string) string {
+	rs := []rune(s)
+	for i := 0; i < len(rs); {
+		r := rs[i]
+		if r == '\\' && i < len(rs)-1 && rs[i+1] == 'u' {
+			r, size := utf8.DecodeRuneInString(s[i+2:])
+			rs = append(rs[:i], append([]rune(string(r)), rs[i+size+2:]...)...)
+			i += size
+		} else {
+			i++
+		}
+	}
+	return string(rs)
 }
